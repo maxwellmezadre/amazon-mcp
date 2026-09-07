@@ -77,7 +77,7 @@ export async function runLogin(
         "Estou esperando a lista de pedidos aparecer.",
     );
 
-    await waitForOrders(ctx, page, timeoutMs, report, deps.sleep ?? sleep);
+    await waitForOrders(ctx, context, page, timeoutMs, report, deps.sleep ?? sleep);
 
     const site = registrableDomain(new URL(config.baseUrl).hostname);
     const cookies = (await context.cookies()).filter((cookie) =>
@@ -85,10 +85,13 @@ export async function runLogin(
     );
     // context.cookies() is browser-level, so the HttpOnly authentication
     // cookies come along — a document.cookie dump never sees them.
+    // The wait loop already proved the browser holds authentication cookies;
+    // this catches the narrower case where they exist under a domain the site
+    // filter drops, which would persist a jar that cannot authenticate.
     const auth = authCookieNames(cookies);
     if (auth.length === 0) {
       throw new LoginError(
-        "A lista de pedidos apareceu, mas a sessão não trouxe os cookies de autenticação da Amazon. Tente de novo.",
+        `A sessão tem cookies de autenticação, mas nenhum sob ${site}. Verifique AMAZON_BASE_URL e tente de novo.`,
       );
     }
     const userAgent = String(await page.evaluate("navigator.userAgent"));
@@ -109,9 +112,18 @@ export async function runLogin(
   }
 }
 
-/** Polls until the orders page is both reachable and decrypted. */
+/**
+ * Polls until the orders page is reachable, decrypted AND backed by real
+ * authentication cookies.
+ *
+ * The cookie check is not belt-and-braces: signed out, Amazon still serves a
+ * page carrying the time filter, so "the list rendered" alone reports success
+ * before the user has typed anything. Both conditions together are what
+ * actually means "logged in".
+ */
 async function waitForOrders(
   ctx: Ctx,
+  context: BrowserContextLike,
   page: PageLike,
   timeoutMs: number,
   report: (message: string) => void,
@@ -127,7 +139,10 @@ async function waitForOrders(
     // to probe; just keep waiting for them.
     if (!url.includes("/ap/signin") && !url.includes("/errors/")) {
       const state = (await page.evaluate(script).catch(() => null)) as ReadyState | null;
-      if (state?.ready) return;
+      if (state?.ready) {
+        const signedIn = authCookieNames(await context.cookies()).length > 0;
+        if (signedIn) return;
+      }
     }
     if (ctx.now() >= deadline) {
       throw new LoginError(

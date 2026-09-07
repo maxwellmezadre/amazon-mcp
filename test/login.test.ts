@@ -25,8 +25,10 @@ function fakeWindow(opts: {
   urls?: string[];
   readyAfter?: number;
   cookies?: Cookie[];
+  /** Jar per cookies() call; the last entry repeats. */
+  cookieReads?: Cookie[][];
 }) {
-  const state = { launches: [] as LaunchOptions[], closed: 0, polls: 0, urlReads: 0 };
+  const state = { launches: [] as LaunchOptions[], closed: 0, polls: 0, urlReads: 0, cookieReads: 0 };
   const launch: LaunchBrowser = async (options) => {
     state.launches.push(options);
     const context: BrowserContextLike = {
@@ -46,14 +48,21 @@ function fakeWindow(opts: {
           return "Mozilla/5.0 (real chrome)";
         },
       }),
-      cookies: async () =>
-        opts.cookies ?? [
+      cookies: async () => {
+        if (opts.cookieReads) {
+          const jar = opts.cookieReads[Math.min(state.cookieReads, opts.cookieReads.length - 1)];
+          state.cookieReads += 1;
+          return jar as Cookie[];
+        }
+        state.cookieReads += 1;
+        return (opts.cookies ?? [
           cookie({ name: "session-id", value: "139-9338268-4563450" }),
           cookie({ name: "at-main", value: "auth-value", httpOnly: true }),
           cookie({ name: "csd-key", value: "k" }),
           // A third-party cookie that must not be persisted.
           cookie({ name: "NID", value: "x", domain: ".google.com" }),
-        ],
+        ]) as Cookie[];
+      },
       addCookies: async () => undefined,
       close: async () => {
         state.closed += 1;
@@ -116,6 +125,27 @@ describe("runLogin", () => {
     expect(window.state.polls).toBe(1);
   });
 
+  test("a rendered list without authentication cookies is not a login yet", async () => {
+    const dir = join(root, "notyet");
+    const { ctx, session } = loginContext(dir);
+    const signedOut = [cookie({ name: "session-id", value: "139-1-1" })];
+    const signedIn = [
+      cookie({ name: "session-id", value: "139-1-1" }),
+      cookie({ name: "at-main", value: "auth-value", httpOnly: true }),
+    ];
+    // Amazon serves the time filter to signed-out visitors too, so the page
+    // looks "ready" long before the user has typed anything.
+    const window = fakeWindow({
+      readyAfter: 1,
+      cookieReads: [signedOut, signedOut, signedIn],
+    });
+
+    await runLogin(ctx, { timeoutMs: 60_000 }, { launch: window.launch, sleep: noSleep });
+
+    expect(window.state.cookieReads).toBeGreaterThan(2);
+    expect(session.data?.cookies.map((c) => c.name)).toContain("at-main");
+  });
+
   test("times out with an actionable message and still closes the browser", async () => {
     const dir = join(root, "timeout");
     const { ctx } = loginContext(dir);
@@ -126,14 +156,16 @@ describe("runLogin", () => {
     expect(window.state.closed).toBe(1);
   });
 
-  test("refuses to save a session without authentication cookies", async () => {
+  test("never finishes while the browser holds no authentication cookies", async () => {
     const dir = join(root, "noauth");
     const { ctx, session } = loginContext(dir);
     const window = fakeWindow({ cookies: [cookie({ name: "session-id", value: "139-1-1" })] });
+    // It waits for the user rather than saving a signed-out jar.
     await expect(
-      runLogin(ctx, { timeoutMs: 60_000 }, { launch: window.launch, sleep: noSleep }),
-    ).rejects.toThrow(/cookies de autenticação/);
+      runLogin(ctx, { timeoutMs: 50 }, { launch: window.launch, sleep: noSleep }),
+    ).rejects.toThrow(LoginError);
     expect(session.data).toBeNull();
+    expect(window.state.closed).toBe(1);
   });
 
   test("--fresh wipes the automation profile first", async () => {
