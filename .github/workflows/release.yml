@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  verify:
+    name: Type-check, test & invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run scripts/verify.ts
+
+  npm:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: bun install --frozen-lockfile
+      - run: bun run build:dist
+      # Trusted publishing (OIDC): no NODE_AUTH_TOKEN. Needs npm >= 11.5.1,
+      # which Node 24 ships, and a trusted publisher configured on npmjs.com.
+      - run: npm publish --access public
+
+  binaries:
+    name: Build ${{ matrix.asset }}
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: bun-linux-x64
+            asset: amazon-linux-x64
+          - os: macos-latest
+            target: bun-darwin-arm64
+            asset: amazon-darwin-arm64
+          - os: windows-latest
+            target: bun-windows-x64
+            asset: amazon-windows-x64.exe
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      # chromium-bidi is an optional playwright-core dependency the bundler
+      # cannot resolve; the browser itself comes from the system channel.
+      - run: bun build --compile --target=${{ matrix.target }} --external chromium-bidi src/bin.ts --outfile ${{ matrix.asset }}
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset }}
