@@ -79,6 +79,16 @@ export const POPOVER = {
  */
 export const ORDER_ID = /\b([A-Z]?\d{2,3}-\d{7}-\d{7})\b/;
 
+/**
+ * How Amazon says a period has no orders. Two wordings, both observed live:
+ * "nao fez um pedido em 2024" for a year and "nao fez nenhum pedido nos
+ * ultimos 30 dias" for a relative filter.
+ *
+ * This is the ONLY credible evidence of an empty period. Without it, zero cards
+ * means the page was read before its orders rendered.
+ */
+export const EMPTY_STATE = /n[aã]o fez (?:um|nenhum) pedido/i;
+
 /** "3 pedidos feitos em 2026" — used to sanity-check the pagination. */
 export const ANNOUNCED_COUNT = /(\d+)\s+pedidos?\s+(?:feitos?|realizados?)/i;
 

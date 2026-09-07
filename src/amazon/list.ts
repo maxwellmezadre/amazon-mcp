@@ -4,7 +4,7 @@ import { parseDateBR } from "../domain/dates.js";
 import { parseBrl } from "../domain/money.js";
 import { parseStatus } from "../domain/status.js";
 import type { OrderItem, OrderSummary, OrderType } from "../domain/types.js";
-import { ANNOUNCED_COUNT, LIST, ORDER_ID, PAGE_SIZE } from "./selectors.js";
+import { ANNOUNCED_COUNT, EMPTY_STATE, LIST, ORDER_ID, PAGE_SIZE } from "./selectors.js";
 
 // Parses one page of "Seus pedidos". Pure: HTML string in, structs out, with an
 // injected clock — so it runs against fixtures in CI with no browser.
@@ -112,6 +112,15 @@ export function parseOrdersPage(
     }
     if (filters.length === 0) {
       throw new ParseError("A página de pedidos não trouxe cards nem o filtro de período.");
+    }
+    // Zero orders is only believable when the page says so itself. The period
+    // filter belongs to the static shell and is present either way, so
+    // accepting it as proof is how a year of history silently disappears.
+    if (!EMPTY_STATE.test(root.textContent ?? "")) {
+      throw new ParseError(
+        "A página não trouxe pedidos nem a mensagem de período vazio: " +
+          "provavelmente foi lida antes de renderizar.",
+      );
     }
   }
 

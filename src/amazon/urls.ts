@@ -3,6 +3,8 @@
 // account on 2026-09-07.
 
 /** `/gp/css/order-history` redirects here; this is the canonical list. */
+import { EMPTY_STATE } from "./selectors.js";
+
 export const ordersPath = (timeFilter: string, page = 1): string =>
   `/your-orders/orders?timeFilter=${encodeURIComponent(timeFilter)}&page=${page}`;
 
@@ -30,6 +32,8 @@ export const ORDERS_READY = ".yohtmlc-order-id";
  * or the page saying outright that the filter has none. The count label is
  * returned too, so the parser can cross-check what it extracted.
  */
+const EMPTY_STATE_SOURCE = `/${EMPTY_STATE.source}/${EMPTY_STATE.flags}`;
+
 export const ORDERS_READY_EXPRESSION = `(() => {
   const body = document.body ? document.body.textContent || "" : "";
   const label = document.querySelector(".time-filter__label");
@@ -37,7 +41,7 @@ export const ORDERS_READY_EXPRESSION = `(() => {
   const cards = document.querySelectorAll(".yohtmlc-order-id").length;
   return {
     encrypted: document.querySelectorAll(".csd-encrypted-sensitive").length,
-    ready: cards > 0 || /n[aã]o fez (?:um|nenhum) pedido/i.test(body),
+    ready: cards > 0 || ${EMPTY_STATE_SOURCE}.test(body),
     cards,
     announced: Number.isFinite(announced) ? announced : null,
   };
