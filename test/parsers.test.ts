@@ -4,6 +4,7 @@ import { parse } from "node-html-parser";
 import { parseOrderDetail, parseSubtotals } from "../src/amazon/detail.js";
 import { parseOrdersPage } from "../src/amazon/list.js";
 import { parseInvoicePopover } from "../src/amazon/popover.js";
+import { ordersPath } from "../src/amazon/urls.js";
 import { HASHED_CLASS, DETAIL, LIST, POPOVER } from "../src/amazon/selectors.js";
 import { CsdError, ParseError } from "../src/core/errors.js";
 
@@ -101,6 +102,33 @@ describe("orders list", () => {
 
   test("a short page is the last one", () => {
     expect(list("orders-with-two.html").hasMore).toBe(false);
+  });
+
+  test("the page parameter is zero-based, exactly like Amazon's own pagination links", () => {
+    // Regression: `page=1` for the first page made Amazon serve the SECOND one.
+    // On a 12-order year that returned the two oldest orders and dropped the
+    // other ten; a `page=2` request then landed past the end, where the page
+    // says "não fez um pedido em 2026" and zero orders looked legitimate.
+    expect(new URL(ordersPath("year-2026"), "https://x").searchParams.get("page")).toBe("0");
+    expect(new URL(ordersPath("year-2026", 2), "https://x").searchParams.get("page")).toBe("1");
+
+    // The fixture is the real last page of a 12-order year: two cards, and a
+    // pagination block whose links are the ground truth for the scheme.
+    const page = list("orders-last-page.html");
+    expect(page.orders).toHaveLength(2);
+    expect(page.hasMore).toBe(false);
+    expect(page.announcedCount).toBe(12);
+
+    // "Anterior", "1" and "2": the arrow repeats the first page's link.
+    const links = [
+      ...new Set(
+        parse(fixture("orders-last-page.html"))
+          .querySelectorAll(`${LIST.pagination} a[href*="page="]`)
+          .map((a) => new URL(a.getAttribute("href") ?? "", "https://x").searchParams.get("page")),
+      ),
+    ];
+    expect(links).toEqual(["0", "1"]);
+    expect(links).toEqual([1, 2].map((n) => new URL(ordersPath("year-2026", n), "https://x").searchParams.get("page")));
   });
 });
 

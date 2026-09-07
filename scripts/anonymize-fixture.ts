@@ -270,6 +270,7 @@ function leaks(output: string): string[] {
 
 const FIXTURES: Array<[source: string, alias: string]> = [
   ["orders-year-2026-p1.html", "orders-with-two.html"],
+  ["orders-year-2026-p2.html", "orders-last-page.html"],
   ["orders-year-2025-p1.html", "orders-single.html"],
   ["orders-year-2024-p1.html", "orders-empty-year.html"],
   ["orders-last30-p1.html", "orders-empty-last30.html"],

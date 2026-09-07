@@ -5,8 +5,14 @@
 /** `/gp/css/order-history` redirects here; this is the canonical list. */
 import { EMPTY_STATE } from "./selectors.js";
 
+/**
+ * `page` is 1-based here; Amazon's parameter is ZERO-based (its own pagination
+ * links go `page=0`, `page=1`, ...). Sending `page=1` for the first page
+ * silently serves the second one: on a 12-order year that is the two oldest
+ * orders, and the other ten never reach the cache.
+ */
 export const ordersPath = (timeFilter: string, page = 1): string =>
-  `/your-orders/orders?timeFilter=${encodeURIComponent(timeFilter)}&page=${page}`;
+  `/your-orders/orders?timeFilter=${encodeURIComponent(timeFilter)}&page=${page - 1}`;
 
 /**
  * The printable summary is the best detail source: one document with items,

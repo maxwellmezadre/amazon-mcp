@@ -5,6 +5,16 @@ Segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Fixed
+
+- O `sync` perdia quase todos os pedidos de um período com mais de dez: o
+  parâmetro `page` da Amazon começa em zero (os links da própria paginação são
+  `page=0`, `page=1`), e a lista era pedida com `page=1` para a primeira
+  página. Num ano com 12 pedidos isso trazia só os dois mais antigos e deixava
+  os outros dez fora do cache; o `doctor` e o `auth_status --verify` liam a
+  mesma página errada. Rode `amazon sync --full` uma vez para recuperar o que
+  faltou.
+
 ## [0.1.1] - 2026-09-07
 
 ### Added

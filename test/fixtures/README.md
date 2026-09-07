@@ -24,6 +24,7 @@ parâmetros de rastreamento e a URL pré-assinada da NF-e, que é uma credencial
 |---|---|
 | `orders-with-two.html` | Dois pedidos: um físico com 3 itens e um digital (`D01-`, sem destinatário) |
 | `orders-single.html` | Um pedido físico, com paginação de página única |
+| `orders-last-page.html` | Última página de um ano com 12 pedidos: dois cards e a paginação com os links `page=0` e `page=1` (o parâmetro da Amazon começa em zero) |
 | `orders-empty-year.html` | Ano sem pedidos: "não fez **um** pedido em 2024" |
 | `orders-empty-last30.html` | Período sem pedidos: "não fez **nenhum** pedido nos últimos 30 dias" |
 | `detail-physical-2.html` | 3 itens, frete, promoção, pontos de recompensa, 6x sem juros |
