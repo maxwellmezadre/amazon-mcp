@@ -11,14 +11,14 @@ O que a anonimização preserva de propósito:
   e o total do card da lista continua igual ao total geral do detalhe.
 - **Os identificadores mantêm a forma e as relações.** Um número de pedido segue
   com o prefixo (`702-`, `701-`, `D01-`), um ASIN segue começando com `B0`, e o
-  mesmo pedido tem o mesmo número na lista e no detalhe — então os testes de
+  mesmo pedido tem o mesmo número na lista e no detalhe, então os testes de
   junção continuam significando algo.
 - **O vocabulário de interface fica intacto** (`Total geral`, `Vendido por`,
   `sem juros`, meses). Trocar essas palavras deixaria os testes passando contra
   dados sem sentido.
 
 O que é substituído: nome, endereço, cidade, CEP, últimos dígitos do cartão,
-parâmetros de rastreamento e a URL pré-assinada da NF-e — que é uma credencial.
+parâmetros de rastreamento e a URL pré-assinada da NF-e, que é uma credencial.
 
 | Arquivo | Para que serve |
 |---|---|

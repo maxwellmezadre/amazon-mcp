@@ -103,7 +103,7 @@ export function hasCsdKey(cookies: readonly Cookie[]): boolean {
 
 /**
  * The `session-id` cookie, which has EXACTLY the same shape as an Amazon order
- * number (`139-9338268-4563450`) and appears in dozens of telemetry URLs on
+ * number (`139-1234567-1234567`) and appears in dozens of telemetry URLs on
  * every page. The list parser compares against it so a leaked session id can
  * never be stored as if it were an order.
  */

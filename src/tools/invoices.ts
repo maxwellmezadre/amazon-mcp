@@ -59,7 +59,7 @@ export const getInvoice = defineTool({
   description:
     "Devolve os links de nota fiscal de um pedido: o resumo para impressão (sempre) e o PDF da NF-e " +
     "quando o vendedor emitiu uma. O link da NF-e é assinado e EXPIRA em poucos minutos, então é " +
-    "buscado na hora e não deve ser guardado nem repassado — para salvar o arquivo use download_invoice.",
+    "buscado na hora e não deve ser guardado nem repassado; para salvar o arquivo use download_invoice.",
   readOnly: true,
   input: Type.Object({
     order_id: orderIdField,

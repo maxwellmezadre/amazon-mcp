@@ -34,7 +34,7 @@ export const listOrders = defineTool({
     "Lista os pedidos da Amazon a partir do cache local, do mais novo para o mais antigo, com os " +
     "itens de cada um. Não usa a rede. Pedidos cancelados ficam de fora por padrão. Atenção: a " +
     "Amazon remove o texto de status de pedidos antigos, então `status` costuma vir `unknown` em " +
-    "compras de anos anteriores — isso não quer dizer que algo deu errado.",
+    "compras de anos anteriores; isso não quer dizer que algo deu errado.",
   readOnly: true,
   input: Type.Object({
     from: dayField("Data inicial (YYYY-MM-DD)"),

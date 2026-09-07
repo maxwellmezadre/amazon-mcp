@@ -5,9 +5,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        ⚠️ **Nunca cole `session.enc`, `session.key`, `cache.db`, o diretório
-        `browser-profile/`, um header `Cookie` nem números de pedido reais.**
-        Eles são a sua conta.
+        Nunca cole `session.enc`, `session.key`, `cache.db`, o diretório
+        `browser-profile/`, um header `Cookie` nem ids de pedido reais. Eles
+        são a sua conta.
   - type: textarea
     id: what
     attributes:
@@ -29,7 +29,7 @@ body:
     id: doctor
     attributes:
       label: Saída de `amazon doctor`
-      description: Ela diz qual camada quebrou. Censure números de pedido e nomes.
+      description: Ela diz qual camada quebrou. Censure ids e nomes de loja.
       render: text
   - type: input
     id: version

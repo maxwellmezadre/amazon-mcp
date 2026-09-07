@@ -74,7 +74,7 @@ export const POPOVER = {
  *
  * This is applied ONLY to the text inside {@link LIST.orderId} or the detail
  * page's orderId component. The `session-id` cookie has exactly this shape
- * (`139-9338268-4563450`) and appears in dozens of telemetry URLs, so running
+ * (`139-1234567-1234567`) and appears in dozens of telemetry URLs, so running
  * it over a whole page happily collects the session id as if it were an order.
  */
 export const ORDER_ID = /\b([A-Z]?\d{2,3}-\d{7}-\d{7})\b/;

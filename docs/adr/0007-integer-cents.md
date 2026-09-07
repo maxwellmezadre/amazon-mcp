@@ -1,22 +1,26 @@
-# ADR-0007 — Dinheiro em centavos inteiros
+# ADR-0007: Dinheiro em centavos inteiros
 
-- **Status:** Aceito
-- **Contexto:** A ferramenta soma valores de anos de compras. Ponto flutuante
-  acumula erro, e o SQLite não tem tipo decimal. Pior: o Amazon entrega
-  dinheiro em **três formatos que discordam entre si** — `formatPriceInfo`
-  (`"R$132,74|132|74"`), string com vírgula decimal e string com **ponto**
-  decimal, essa última na API de devoluções, na mesma conta e no mesmo dia.
+Status: aceito.
+
+## Contexto
+
+A ferramenta soma valores de anos de compras. Ponto flutuante acumula erro, e
+o SQLite não tem tipo decimal. A Amazon entrega dinheiro só como texto, e em
+mais de uma forma: `R$246,80` no preço acessível, `R$ 246,80` nas linhas de
+subtotal (com espaço não separável), `-R$ 0,96` para pontos de recompensa e
+promoções, e `Grátis` no frete.
 
 ## Decisão
 
-Centavo inteiro em toda a aplicação e no banco. A conversão para decimal
-acontece só na borda da tool (`cache/rows.ts`). O parser prefere sempre o
-formato com pipe, que não depende de locale; a string só é interpretada quando
-não há alternativa, decidindo o separador decimal **pelo próprio texto**.
+Centavo inteiro em toda a aplicação e no banco. `parseBrl` em
+`src/domain/money.ts` é a única leitura de valor, e devolve `null` quando não
+consegue ler, nunca zero: "sem preço nesta linha" e "esta linha custa zero"
+são fatos diferentes, e só um deles entra na soma. A conversão para decimal
+acontece uma vez, na borda da tool (`cache/rows.ts`).
 
 ## Consequências
 
-`SUM()` é exato. Um valor que não pôde ser lido vira `null`, nunca zero — um
-zero silencioso mentiria num relatório de gastos. A soma das linhas do
-breakdown ainda pode divergir do total em 1 a 3 centavos, mas por causa do
-arredondamento do próprio Amazon, não nosso.
+`SUM()` é exato e a identidade `subtotal + frete - promoções - pontos + imposto
+= total` fecha nos pedidos reais; o `doctor` confere isso no check
+`money_identity`. Descontos e pontos ficam negativos no banco, então a soma dos
+subtotais é o total, sem regra especial por rótulo.

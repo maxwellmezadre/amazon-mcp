@@ -73,7 +73,7 @@ export const installmentsSchedule = defineTool({
   name: "installments_schedule",
   description:
     "Cronograma PROJETADO das parcelas em aberto, mês a mês. A Amazon informa quantas parcelas e o " +
-    "valor de cada uma, mas NÃO informa as datas de vencimento — quem controla isso é a fatura do " +
+    "valor de cada uma, mas NÃO informa as datas de vencimento; quem controla isso é a fatura do " +
     "cartão. Portanto as datas aqui são estimadas (primeira parcela na data do pedido, as demais a " +
     "cada mês) e vêm sempre marcadas com projected: true. Nunca apresente como confirmado pela Amazon.",
   readOnly: true,

@@ -56,7 +56,7 @@ function fakeWindow(opts: {
         }
         state.cookieReads += 1;
         return (opts.cookies ?? [
-          cookie({ name: "session-id", value: "139-9338268-4563450" }),
+          cookie({ name: "session-id", value: "139-1234567-1234567" }),
           cookie({ name: "at-main", value: "auth-value", httpOnly: true }),
           cookie({ name: "csd-key", value: "k" }),
           // A third-party cookie that must not be persisted.

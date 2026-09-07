@@ -52,7 +52,7 @@ export function sessionData(overrides: Partial<SessionData> = {}): SessionData {
   return {
     version: 1,
     cookies: [
-      cookie({ name: "session-id", value: "139-9338268-4563450" }),
+      cookie({ name: "session-id", value: "139-1234567-1234567" }),
       cookie({ name: "at-main", value: "auth-secret-value", httpOnly: true }),
       cookie({ name: "csd-key", value: "decrypt-me" }),
     ],

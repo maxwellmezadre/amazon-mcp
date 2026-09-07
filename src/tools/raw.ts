@@ -33,7 +33,7 @@ export const rawGet = defineTool({
   name: "raw_get",
   description:
     "Abre uma página da Amazon no navegador e devolve o HTML já descriptografado, sem interpretar. " +
-    "Serve para redescobrir um seletor quando o site muda — use com parcimônia e nunca em rajada. " +
+    "Serve para redescobrir um seletor quando o site muda; use com parcimônia e nunca em rajada. " +
     "Só caminhos de leitura de pedidos (/your-orders/, /gp/css/, /your-returns, /pay/history); " +
     "qualquer outro é recusado, porque este servidor nunca altera a conta.",
   readOnly: true,

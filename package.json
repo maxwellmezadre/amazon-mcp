@@ -11,8 +11,8 @@
   "homepage": "https://github.com/maxwellmezadre/amazon-mcp#readme",
   "keywords": ["amazon", "cli", "mcp", "purchases", "orders", "invoices", "claude"],
   "bin": {
-    "amazon": "./dist/bin.js",
-    "amazon-mcp": "./dist/mcp-bin.js"
+    "amazon": "dist/bin.js",
+    "amazon-mcp": "dist/mcp-bin.js"
   },
   "files": ["dist", "SKILL.md", "docs/TOOLS.md", "README.md", "LICENSE"],
   "exports": "./dist/bin.js",

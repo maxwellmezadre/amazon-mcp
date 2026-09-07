@@ -5,6 +5,39 @@ Segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Added
+
+- `docs/INTERNAL-API.md`: a superfície interna da Amazon (páginas, autenticação
+  e as armadilhas confirmadas na conta real), no mesmo formato dos outros MCPs.
+
+### Changed
+
+- README, SKILL e `docs/` reorganizados no padrão comum dos cinco MCPs de
+  histórico de compras (amazon, mercadolivre, shein, shopee, aliexpress):
+  mesmas seções, mesma tabela de tools com o custo em rede, mesma tabela de
+  troubleshooting.
+- ADRs no formato comum (`Contexto`, `Decisão`, `Consequências`) e com os fatos
+  conferidos contra o código: 0001, 0002, 0005 e 0007 traziam trechos copiados
+  do aliexpress-mcp (`src/core/http.ts`, `src/domain/normalize.ts`, Open
+  Platform, `formatPriceInfo`) que não existem aqui.
+- `scripts/install.ts` no formato comum: `--prefix=`, `--skip-build`,
+  `--dry-run` e `--import-browser=`.
+- `scripts/verify.ts` também confere que `raw_get` recusa uma superfície de
+  escrita e um caminho com `..`, e que o log sai no stderr.
+- `docs/TOOLS.md` gerado no formato comum: índice com âncoras e o marcador de
+  escrita em cada tool.
+- Workflows de CI e release, templates de issue e PR, `.gitignore` e código de
+  conduta no formato comum.
+- `package.json`: `bin` na forma canônica que o npm grava.
+
+### Fixed
+
+- CONTRIBUTING citava `src/core/http.ts` e `src/domain/normalize.ts`, arquivos
+  do aliexpress-mcp; agora aponta para `src/browser/client.ts` e
+  `src/amazon/selectors.ts`, que são os que existem.
+- O exemplo de cookie `session-id` na documentação e nos comentários deixou de
+  usar um valor real.
+
 ## [0.1.0] - 2026-09-07
 
 ### Added
@@ -30,7 +63,7 @@ documentação de engenharia reversa inicial supunha:
 - A Amazon.com.br entrega os pedidos **cifrados no HTML**. Um cliente HTTP com a
   sessão perfeita recebe os contêineres vazios; um navegador é obrigatório.
 - Os cookies de autenticação são `at-acbbr` e `sess-at-acbbr`, com o sufixo do
-  marketplace — não `at-main`. Os cookies `x-` e `ubid-` sobrevivem ao logout e
+  marketplace, não `at-main`. Os cookies `x-` e `ubid-` sobrevivem ao logout e
   não provam sessão nenhuma.
 - O filtro de período faz parte do esqueleto estático da página. Tratá-lo como
   prova de que a página carregou fazia um ano inteiro de compras virar "zero

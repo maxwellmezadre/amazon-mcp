@@ -13,8 +13,9 @@ description: >-
 
 # Amazon — histórico de compras
 
-MCP `amazon`, 13 tools. A referência completa está em `TOOLS.md`, ao lado deste
-arquivo. **Somente leitura na conta**: nada aqui cancela, devolve ou recompra.
+MCP `amazon` (`mcp__amazon__*`), 13 tools. Referência completa de parâmetros em
+`TOOLS.md`, ao lado deste arquivo. Somente leitura na conta: nada aqui cancela,
+devolve ou recompra.
 
 ## Leia antes de responder
 
@@ -28,7 +29,7 @@ arquivo. **Somente leitura na conta**: nada aqui cancela, devolve ou recompra.
 4. **`status: unknown` é normal em pedidos antigos.** A Amazon remove o texto de
    status de compras de anos anteriores. Não diga que houve erro.
 5. **Parcelas são PROJEÇÃO.** A Amazon informa quantas parcelas e o valor, mas
-   nunca as datas de vencimento — quem controla é a fatura do cartão. Toda
+   nunca as datas de vencimento; quem controla é a fatura do cartão. Toda
    resposta de `installments_schedule` vem com `projected: true`. Diga isso.
 6. **Cancelados não são gasto** e ficam fora das somas por padrão.
 7. **O link da NF-e expira em cerca de 3 minutos** e é uma credencial. Nunca

@@ -5,8 +5,8 @@ on:
     tags: ["v*"]
 
 permissions:
-  contents: write
-  id-token: write
+  contents: write # create the Release and attach the binaries
+  id-token: write # npm provenance (trusted publishing)
 
 jobs:
   verify:
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun run scripts/verify.ts
+      - run: bun run verify
 
   npm:
     name: Publish to npm
@@ -27,28 +27,30 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-node@v6
         with:
+          # Trusted publishing (OIDC) needs npm >= 11.5.1; Node 24 ships it.
           node-version: "24"
-          registry-url: https://registry.npmjs.org
+          registry-url: "https://registry.npmjs.org"
           package-manager-cache: false
       - run: bun install --frozen-lockfile
       - run: bun run build:dist
-      # The first release of a package has to be published by hand, because a
-      # trusted publisher can only be configured on a package that exists. That
-      # leaves this job trying to republish the same version when the tag is
-      # pushed afterwards, which fails. Skip instead.
-      - id: check
+      # The first version of a new package cannot go out through OIDC: npm
+      # requires the package to exist before a trusted publisher can be
+      # configured, and requires the trusted publisher to publish
+      # (npm/cli#8544). That version is published by hand, and this step then
+      # skips the matching tag instead of failing.
+      - id: published
         run: |
-          name=$(node -p "require('./package.json').name")
-          version=$(node -p "require('./package.json').version")
-          if npm view "$name@$version" version >/dev/null 2>&1; then
-            echo "published=true" >> "$GITHUB_OUTPUT"
-            echo "$name@$version já está no npm; pulando a publicação."
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "$NAME@$VERSION já está no npm; nada a publicar."
           else
-            echo "published=false" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
-      # Trusted publishing (OIDC): no NODE_AUTH_TOKEN. Needs npm >= 11.5.1,
-      # which Node 24 ships, and a trusted publisher configured on npmjs.com.
-      - if: steps.check.outputs.published == 'false'
+      # No NODE_AUTH_TOKEN: the credential is a short-lived OIDC token minted
+      # at publish time, and provenance comes for free.
+      - if: steps.published.outputs.skip == 'false'
         run: npm publish --access public
 
   binaries:
@@ -71,8 +73,9 @@ jobs:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      # chromium-bidi is an optional playwright-core dependency the bundler
-      # cannot resolve; the browser itself comes from the system channel.
+      # chromium-bidi stays external: it is a dynamic require inside
+      # playwright-core that the compiler cannot resolve, and the code path
+      # that uses it (the BiDi transport) is not ours. Chrome speaks CDP.
       - run: bun build --compile --target=${{ matrix.target }} --external chromium-bidi src/bin.ts --outfile ${{ matrix.asset }}
       - uses: softprops/action-gh-release@v2
         with:

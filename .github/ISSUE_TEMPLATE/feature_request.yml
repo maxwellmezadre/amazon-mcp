@@ -16,6 +16,5 @@ body:
   - type: markdown
     attributes:
       value: |
-        Lembre que este projeto é **somente leitura** na conta: cancelar um
-        pedido, devolver, recomprar, alterar endereço ou avaliar produto estão
+        Este projeto é somente leitura na conta: cancelar um pedido, devolver, recomprar, alterar endereço ou avaliar produto estão
         fora de escopo por decisão de projeto.

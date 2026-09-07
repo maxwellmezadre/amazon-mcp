@@ -3,8 +3,9 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { allTools } from "../src/tools/registry.js";
 
-// Renders docs/TOOLS.md from the registry, so the reference cannot drift from
-// the schemas the server actually advertises.
+// docs/TOOLS.md is generated from the registry so the reference can never drift
+// from the schemas the server advertises. Run it whenever a tool changes:
+// `bun run docs:tools`.
 
 type Schema = {
   type?: string;
@@ -13,73 +14,71 @@ type Schema = {
   required?: string[];
   anyOf?: Schema[];
   const?: unknown;
-  pattern?: string;
   minimum?: number;
   maximum?: number;
   minLength?: number;
+  pattern?: string;
 };
 
 function typeOf(schema: Schema): string {
   if (schema.anyOf) {
-    const consts = schema.anyOf.map((option) => option.const).filter((value) => value !== undefined);
-    if (consts.length === schema.anyOf.length) {
-      return consts.map((value) => `\`${String(value)}\``).join(" \\| ");
+    const literals = schema.anyOf.filter((option) => option.const !== undefined);
+    if (literals.length === schema.anyOf.length) {
+      return literals.map((option) => `\`${String(option.const)}\``).join(" \\| ");
     }
     return schema.anyOf.map(typeOf).join(" \\| ");
   }
-  return schema.type ?? "any";
+  const bounds: string[] = [];
+  if (schema.minimum !== undefined) bounds.push(`≥ ${schema.minimum}`);
+  if (schema.maximum !== undefined) bounds.push(`≤ ${schema.maximum}`);
+  if (schema.minLength !== undefined) bounds.push(`min ${schema.minLength} chars`);
+  if (schema.pattern) bounds.push(`\`${schema.pattern}\``);
+  return `${schema.type ?? "any"}${bounds.length > 0 ? ` (${bounds.join(", ")})` : ""}`;
 }
 
-function boundsOf(schema: Schema): string {
-  const parts: string[] = [];
-  if (schema.minimum !== undefined) parts.push(`≥ ${schema.minimum}`);
-  if (schema.maximum !== undefined) parts.push(`≤ ${schema.maximum}`);
-  if (schema.minLength !== undefined) parts.push(`mín. ${schema.minLength} chars`);
-  if (schema.pattern !== undefined) parts.push(`\`${schema.pattern}\``);
-  return parts.join(", ");
-}
+const escape = (text: string): string => text.replace(/\|/g, "\\|").replace(/\n/g, " ");
 
-const lines: string[] = [
-  "# Tools",
-  "",
-  "> Gerado por `bun run docs:tools` a partir de `src/tools/registry.ts`. Não edite à mão.",
-  "",
-  "| Tool | Escreve? | Para quê |",
-  "|---|---|---|",
-];
-
-for (const tool of allTools) {
-  const summary = tool.description.split(". ")[0] ?? tool.description;
-  lines.push(`| \`${tool.name}\` | ${tool.readOnly ? "não" : "sim"} | ${summary}. |`);
-}
-
-lines.push(
-  "",
-  "Tools marcadas com **Escreve? sim** gravam no cache local ou em disco — nunca na sua conta da Amazon.",
-  "Com `AMAZON_READ_ONLY=1` elas nem são registradas.",
-  "",
-);
-
-for (const tool of allTools) {
-  const schema = JSON.parse(JSON.stringify(tool.input)) as Schema;
-  const required = new Set(schema.required ?? []);
-  lines.push(`## \`${tool.name}\``, "", tool.description, "");
-  const properties = Object.entries(schema.properties ?? {});
-  if (properties.length === 0) {
-    lines.push("Sem parâmetros.", "");
-    continue;
-  }
-  lines.push("| Parâmetro | Tipo | Obrigatório | Descrição |", "|---|---|---|---|");
-  for (const [name, property] of properties) {
-    const bounds = boundsOf(property);
+function render(): string {
+  const writers = allTools.filter((tool) => !tool.readOnly).length;
+  const lines: string[] = [
+    "# Tools",
+    "",
+    "> Gerado por `bun run docs:tools` a partir de `src/tools/registry.ts`. Não edite à mão.",
+    "",
+    `O servidor expõe ${allTools.length} tools. Com \`AMAZON_READ_ONLY=1\` as ${writers} que ` +
+      "escrevem algo (sessão, cache, arquivo) não são registradas. Nenhuma tool escreve na conta " +
+      "da Amazon.",
+    "",
+    "| Tool | Escreve | O que faz |",
+    "| --- | --- | --- |",
+  ];
+  for (const tool of allTools) {
+    const summary = tool.description.split(". ")[0] ?? tool.description;
     lines.push(
-      `| \`${name}\` | ${typeOf(property)} | ${required.has(name) ? "sim" : "não"} | ` +
-        `${property.description ?? ""}${bounds ? ` (${bounds})` : ""} |`,
+      `| [\`${tool.name}\`](#${tool.name}) | ${tool.readOnly ? "não" : "sim"} | ${escape(summary)}. |`,
     );
   }
-  lines.push("");
+
+  for (const tool of allTools) {
+    const schema = JSON.parse(JSON.stringify(tool.input)) as Schema;
+    const properties = schema.properties ?? {};
+    const required = new Set(schema.required ?? []);
+    lines.push("", `## \`${tool.name}\``, "", tool.description, "");
+    lines.push(`Escreve em disco ou no cache: ${tool.readOnly ? "não" : "sim"}.`, "");
+    if (Object.keys(properties).length === 0) {
+      lines.push("Sem parâmetros.");
+      continue;
+    }
+    lines.push("| Parâmetro | Tipo | Obrigatório | Descrição |", "| --- | --- | --- | --- |");
+    for (const [name, property] of Object.entries(properties)) {
+      lines.push(
+        `| \`${name}\` | ${typeOf(property)} | ${required.has(name) ? "sim" : "não"} | ${escape(property.description ?? "")} |`,
+      );
+    }
+  }
+  return `${lines.join("\n")}\n`;
 }
 
-const target = join(process.cwd(), "docs", "TOOLS.md");
-writeFileSync(target, `${lines.join("\n")}\n`);
-console.error(`docs/TOOLS.md gerado com ${allTools.length} tools.`);
+const target = join(import.meta.dir, "..", "docs", "TOOLS.md");
+writeFileSync(target, render());
+console.error(`docs/TOOLS.md gerado (${allTools.length} tools).`);

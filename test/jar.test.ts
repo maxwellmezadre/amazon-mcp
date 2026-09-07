@@ -65,7 +65,7 @@ describe("account signals", () => {
     expect(AUTH_COOKIE_PATTERN.test("at-acbbr")).toBe(true);
     expect(AUTH_COOKIE_PATTERN.test("sess-at-acbbr")).toBe(true);
 
-    const jar = [cookie({ name: "session-id", value: "139-9338268-4563450" })];
+    const jar = [cookie({ name: "session-id", value: "139-1234567-1234567" })];
     expect(hasAuthCookies(jar)).toBe(false);
     jar.push(cookie({ name: "at-acbbr", value: "secret", httpOnly: true }));
     expect(hasAuthCookies(jar)).toBe(true);
@@ -92,8 +92,8 @@ describe("account signals", () => {
   });
 
   test("exposes session-id, which has the very shape of an order number", () => {
-    const jar = [cookie({ name: "session-id", value: "139-9338268-4563450" })];
-    expect(sessionIdOf(jar)).toBe("139-9338268-4563450");
+    const jar = [cookie({ name: "session-id", value: "139-1234567-1234567" })];
+    expect(sessionIdOf(jar)).toBe("139-1234567-1234567");
     expect(sessionIdOf(jar)).toMatch(/^\d{3}-\d{7}-\d{7}$/);
     expect(sessionIdOf([])).toBeUndefined();
   });
