@@ -5,7 +5,13 @@ import { type ReadyState, readyScript } from "../browser/transport.js";
 import type { BrowserContextLike, LaunchBrowser, PageLike } from "../browser/types.js";
 import type { Ctx } from "../context.js";
 import { LoginError } from "../core/errors.js";
-import { authCookieNames, hasCsdKey, inSiteDomain, registrableDomain } from "./jar.js";
+import {
+  authCookieNames,
+  hasCsdKey,
+  identityCookieNames,
+  inSiteDomain,
+  registrableDomain,
+} from "./jar.js";
 
 // Interactive login. A real window opens and the USER types the password, the
 // OTP and solves any captcha. Nothing about that is automated: besides being
@@ -132,6 +138,7 @@ async function waitForOrders(
   const script = readyScript(ORDERS_READY);
   const deadline = ctx.now() + timeoutMs;
   let lastReport = ctx.now();
+  let warned = false;
 
   for (;;) {
     const url = page.url();
@@ -140,8 +147,20 @@ async function waitForOrders(
     if (!url.includes("/ap/signin") && !url.includes("/errors/")) {
       const state = (await page.evaluate(script).catch(() => null)) as ReadyState | null;
       if (state?.ready) {
-        const signedIn = authCookieNames(await context.cookies()).length > 0;
-        if (signedIn) return;
+        const cookies = await context.cookies();
+        if (authCookieNames(cookies).length > 0) return;
+        // The page is rendered but no access-token cookie is in the jar. Say so
+        // once, with the cookie NAMES only, so a marketplace naming this tool
+        // does not know is a one-line report instead of a silent hang.
+        if (!warned) {
+          warned = true;
+          const identity = identityCookieNames(cookies);
+          report(
+            `A lista renderizou, mas nenhum cookie de autenticação foi encontrado. ` +
+              `Cookies de identidade presentes: ${identity.join(", ") || "nenhum"}. ` +
+              `Nomes no jar: ${cookies.map((cookie) => cookie.name).sort().join(", ") || "nenhum"}.`,
+          );
+        }
       }
     }
     if (ctx.now() >= deadline) {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  AUTH_COOKIES,
+  AUTH_COOKIE_PATTERN,
   CSD_COOKIE,
   type Cookie,
   authCookieNames,
@@ -8,6 +8,7 @@ import {
   findCookie,
   hasAuthCookies,
   hasCsdKey,
+  identityCookieNames,
   hostMatches,
   inSiteDomain,
   registrableDomain,
@@ -57,13 +58,29 @@ describe("registrableDomain", () => {
 });
 
 describe("account signals", () => {
-  test("authentication needs one of the HttpOnly main cookies", () => {
-    expect(AUTH_COOKIES).toContain("at-main");
+  test("recognises the access-token cookies of ANY marketplace suffix", () => {
+    // amazon.com uses -main, amazon.com.br uses -acbbr; hardcoding either is how
+    // detection silently never matches.
+    expect(AUTH_COOKIE_PATTERN.test("at-main")).toBe(true);
+    expect(AUTH_COOKIE_PATTERN.test("at-acbbr")).toBe(true);
+    expect(AUTH_COOKIE_PATTERN.test("sess-at-acbbr")).toBe(true);
+
     const jar = [cookie({ name: "session-id", value: "139-9338268-4563450" })];
     expect(hasAuthCookies(jar)).toBe(false);
-    jar.push(cookie({ name: "at-main", value: "secret", httpOnly: true }));
+    jar.push(cookie({ name: "at-acbbr", value: "secret", httpOnly: true }));
     expect(hasAuthCookies(jar)).toBe(true);
-    expect(authCookieNames(jar)).toEqual(["at-main"]);
+    expect(authCookieNames(jar)).toEqual(["at-acbbr"]);
+  });
+
+  test("identity cookies are not proof of a session: they survive a sign-out", () => {
+    // x-acbbr is what lets Amazon greet you by name while logged out.
+    const signedOut = [
+      cookie({ name: "x-acbbr", value: "remembered" }),
+      cookie({ name: "ubid-acbbr", value: "device" }),
+      cookie({ name: "session-id", value: "139-1-1" }),
+    ];
+    expect(hasAuthCookies(signedOut)).toBe(false);
+    expect(identityCookieNames(signedOut)).toEqual(["x-acbbr", "ubid-acbbr"]);
   });
 
   test("csd-key is tracked apart: a valid session without it renders nothing", () => {

@@ -23,17 +23,21 @@ export type Cookie = {
 };
 
 /**
- * The cookies that actually authenticate. They are HttpOnly, so they exist only
- * in the browser's own store — a `document.cookie` dump would look complete and
- * still be useless.
+ * The cookies that actually authenticate, as a family rather than a list.
+ *
+ * Amazon suffixes them per marketplace: `at-main` on amazon.com, `at-acbbr` on
+ * amazon.com.br ("acbbr" = Amazon.com.BR). Hardcoding one marketplace is how
+ * detection silently never matches, so the suffix is left open.
+ *
+ * Only the access-token cookies count. `x-*` and `sst-*` survive a sign-out —
+ * they are what lets Amazon greet you by name while logged out — so treating
+ * them as proof of a session would accept a signed-out browser.
  */
-export const AUTH_COOKIES = ["at-main", "sess-at-main", "x-main"] as const;
+export const AUTH_COOKIE_PATTERN = /^(at|sess-at)-[a-z0-9]+$/i;
 
-/**
- * The key Amazon's client-side decryption uses to turn the encrypted order
- * cards into real DOM. Not HttpOnly, and not authentication: a session can be
- * perfectly valid and still render nothing without it.
- */
+/** Long-lived identity cookies: informative, never proof of a live session. */
+export const IDENTITY_COOKIE_PATTERN = /^(x|sst|ubid)-[a-z0-9]+$/i;
+
 export const CSD_COOKIE = "csd-key";
 
 const stripDot = (domain: string): string => domain.replace(/^\./, "").toLowerCase();
@@ -79,7 +83,12 @@ export function findCookie(cookies: readonly Cookie[], name: string): Cookie | u
 
 /** Names of the authentication cookies present in the jar. */
 export function authCookieNames(cookies: readonly Cookie[]): string[] {
-  return AUTH_COOKIES.filter((name) => findCookie(cookies, name) !== undefined);
+  return cookies.filter((cookie) => AUTH_COOKIE_PATTERN.test(cookie.name)).map((c) => c.name);
+}
+
+/** Identity cookies present; useful in diagnostics to tell "known" from "signed in". */
+export function identityCookieNames(cookies: readonly Cookie[]): string[] {
+  return cookies.filter((cookie) => IDENTITY_COOKIE_PATTERN.test(cookie.name)).map((c) => c.name);
 }
 
 /** A jar without one of these cannot be logged in, whatever else it carries. */
