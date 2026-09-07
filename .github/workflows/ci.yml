@@ -7,16 +7,16 @@ on:
 
 jobs:
   verify:
-    name: Type-check & test (Bun)
+    name: Type-check, test & invariants (Bun)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bunx tsc --noEmit
-      # No network and no browser in CI: the parsers run against committed
-      # fixtures and the gated live test skips itself.
-      - run: bun test
+      # verify.ts = tsc --noEmit + bun test + the real MCP server over stdio.
+      # No network and no browser: the parsers run against committed fixtures
+      # and there is no session, so no request is even attempted.
+      - run: bun run scripts/verify.ts
 
   binary:
     name: Build binary
