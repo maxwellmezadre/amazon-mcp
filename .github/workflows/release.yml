@@ -32,9 +32,24 @@ jobs:
           package-manager-cache: false
       - run: bun install --frozen-lockfile
       - run: bun run build:dist
+      # The first release of a package has to be published by hand, because a
+      # trusted publisher can only be configured on a package that exists. That
+      # leaves this job trying to republish the same version when the tag is
+      # pushed afterwards, which fails. Skip instead.
+      - id: check
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "$name@$version já está no npm; pulando a publicação."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
       # Trusted publishing (OIDC): no NODE_AUTH_TOKEN. Needs npm >= 11.5.1,
       # which Node 24 ships, and a trusted publisher configured on npmjs.com.
-      - run: npm publish --access public
+      - if: steps.check.outputs.published == 'false'
+        run: npm publish --access public
 
   binaries:
     name: Build ${{ matrix.asset }}
