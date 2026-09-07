@@ -1,5 +1,10 @@
 import { Type } from "@sinclair/typebox";
-import { ORDERS_READY, YEAR_FILTER, ordersPath } from "../amazon/urls.js";
+import {
+  ORDERS_READY,
+  ORDERS_READY_EXPRESSION,
+  YEAR_FILTER,
+  ordersPath,
+} from "../amazon/urls.js";
 import { AuthError, CaptchaError, CsdError } from "../core/errors.js";
 import {
   authCookieNames,
@@ -93,7 +98,10 @@ export const authStatus = defineTool({
 
     try {
       const year = new Date(ctx.now()).getFullYear();
-      await ctx.amazon.page(ordersPath(YEAR_FILTER(year)), { readySelector: ORDERS_READY });
+      await ctx.amazon.page(ordersPath(YEAR_FILTER(year)), {
+        readySelector: ORDERS_READY,
+        readyExpression: ORDERS_READY_EXPRESSION,
+      });
       return compactObject({ ...base, verified: true });
     } catch (error) {
       // An expired session, a captcha or a decryption that never ran are all

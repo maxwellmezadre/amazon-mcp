@@ -1,7 +1,7 @@
 import { mkdirSync, rmSync } from "node:fs";
-import { ORDERS_READY, YEAR_FILTER, ordersPath } from "../amazon/urls.js";
+import { ORDERS_READY_EXPRESSION, YEAR_FILTER, ordersPath } from "../amazon/urls.js";
 import { launchWithPlaywright } from "../browser/launch.js";
-import { type ReadyState, readyScript } from "../browser/transport.js";
+import { READY_MARKER, type ReadyState } from "../browser/transport.js";
 import type { BrowserContextLike, LaunchBrowser, PageLike } from "../browser/types.js";
 import type { Ctx } from "../context.js";
 import { LoginError } from "../core/errors.js";
@@ -135,7 +135,8 @@ async function waitForOrders(
   report: (message: string) => void,
   wait: (ms: number) => Promise<void>,
 ): Promise<void> {
-  const script = readyScript(ORDERS_READY);
+  // Same rule as the transport: the static shell is not proof of a login.
+  const script = `${READY_MARKER}{} */\n${ORDERS_READY_EXPRESSION}`;
   const deadline = ctx.now() + timeoutMs;
   let lastReport = ctx.now();
   let warned = false;

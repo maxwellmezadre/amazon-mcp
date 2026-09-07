@@ -19,12 +19,29 @@ export const orderDetailPath = (orderId: string): string =>
 export const invoicePopoverPath = (orderId: string): string =>
   `/your-orders/invoice/popover?orderId=${encodeURIComponent(orderId)}&relatedRequestId=&ref_=ppx_yo2ov_dt_b_invoice`;
 
+export const ORDERS_READY = ".yohtmlc-order-id";
+
 /**
- * Accepts both outcomes on purpose. A filter with no orders renders the time
- * filter and no order id at all, and demanding an order id there would report a
- * perfectly good page as a decryption failure.
+ * Readiness for the order list, which cannot be a single selector.
+ *
+ * The period filter belongs to the STATIC shell and is there before any order
+ * renders, so treating it as proof extracts an empty page and silently reports
+ * a year as having no orders. The two real outcomes are: at least one order id,
+ * or the page saying outright that the filter has none. The count label is
+ * returned too, so the parser can cross-check what it extracted.
  */
-export const ORDERS_READY = ".yohtmlc-order-id, #time-filter";
+export const ORDERS_READY_EXPRESSION = `(() => {
+  const body = document.body ? document.body.textContent || "" : "";
+  const label = document.querySelector(".time-filter__label");
+  const announced = label ? parseInt((label.textContent || "").replace(/[^0-9]/g, ""), 10) : NaN;
+  const cards = document.querySelectorAll(".yohtmlc-order-id").length;
+  return {
+    encrypted: document.querySelectorAll(".csd-encrypted-sensitive").length,
+    ready: cards > 0 || /n[aã]o fez (?:um|nenhum) pedido/i.test(body),
+    cards,
+    announced: Number.isFinite(announced) ? announced : null,
+  };
+})()`;
 export const DETAIL_READY = "#od-subtotals, #orderDetails";
 export const POPOVER_READY = "a[href]";
 

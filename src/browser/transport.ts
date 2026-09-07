@@ -28,13 +28,16 @@ const BLOCKED_RESOURCES = new Set(["image", "font", "media"]);
 export type ReadyState = { encrypted: number; ready: boolean };
 
 export type LoadOptions = {
-  /**
-   * CSS selector that proves the page finished rendering. A selector list is
-   * fine and usually right: on the orders page `.yohtmlc-order-id, #time-filter`
-   * accepts both "orders decrypted" and "this filter legitimately has none",
-   * which a bare order-id selector would report as a decryption failure.
-   */
+  /** CSS selector that proves the page finished rendering. */
   readySelector: string;
+  /**
+   * Overrides the selector check with a full expression returning
+   * {@link ReadyState}. Needed when "rendered" is not a single element: the
+   * orders list must distinguish "cards arrived" from "this filter really is
+   * empty", and its static shell (the period filter) is present either way —
+   * accepting that as proof extracts the page before the orders exist.
+   */
+  readyExpression?: string;
 };
 
 export type PageLoader = {
@@ -184,8 +187,13 @@ export function createPageLoader(opts: PageLoaderOptions): PageLoader {
     }
   }
 
-  async function waitForDecryption(current: PageLike, url: string, selector: string): Promise<void> {
-    const script = readyScript(selector);
+  async function waitForDecryption(
+    current: PageLike,
+    url: string,
+    selector: string,
+    expression?: string,
+  ): Promise<void> {
+    const script = expression ? `${READY_MARKER}{} */\n${expression}` : readyScript(selector);
     const deadline = now() + config.csdTimeoutMs;
     let encrypted = 0;
     for (;;) {
@@ -221,7 +229,7 @@ export function createPageLoader(opts: PageLoaderOptions): PageLoader {
       classifyLanding(current.url());
       // Never wait for networkidle: Amazon's telemetry beacons keep firing and
       // it may never settle. Wait for the decrypted content instead.
-      await waitForDecryption(current, url, options.readySelector);
+      await waitForDecryption(current, url, options.readySelector, options.readyExpression);
       const result = (await current.evaluate(extractScript)) as PageResult;
       await persistCookies();
       touch();
