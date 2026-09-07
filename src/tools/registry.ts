@@ -2,6 +2,8 @@ import type { Config } from "../config.js";
 import { authStatus } from "./auth.js";
 import type { ToolDef } from "./define.js";
 import { login } from "./login.js";
+import { getOrder, listOrders, searchProducts } from "./orders.js";
+import { installmentsSchedule, spendingSummary } from "./analytics.js";
 import { sync } from "./sync.js";
 import { rawGet } from "./raw.js";
 
@@ -14,6 +16,13 @@ export const allTools: ToolDef[] = [
   login,
   // Cache
   sync,
+  // Orders
+  listOrders,
+  getOrder,
+  searchProducts,
+  // Analytics
+  spendingSummary,
+  installmentsSchedule,
   // Escape hatch
   rawGet,
 ];

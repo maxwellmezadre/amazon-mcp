@@ -320,34 +320,45 @@ export function createCacheRepo(db: Database, now: () => number) {
     },
 
     /**
-     * Orders still needing their detail page: never fetched, or not final and
-     * older than the TTL. A delivered or cancelled order can no longer change,
-     * so it is never fetched twice.
+     * Orders still needing their detail page: never fetched, or still live and
+     * stale. A delivered or cancelled order can no longer change, so it is
+     * never fetched twice.
+     *
+     * `settledBefore` covers the case the status text cannot: Amazon strips the
+     * status from old orders, so they parse as "unknown" forever. Without a
+     * purchase-date cutoff every such order would be re-fetched every day, for
+     * good, spending requests on history that can no longer move.
      */
-    pendingDetail(staleBefore: string, limit: number): string[] {
+    pendingDetail(staleBefore: string, limit: number, settledBefore?: string): string[] {
       return (
         db
           .query(
             `SELECT order_id FROM orders
              WHERE detail_error IS NULL
                AND (detail_fetched_at IS NULL
-                    OR (status NOT IN ('delivered','cancelled','returned') AND detail_fetched_at < ?))
+                    OR (status NOT IN ('delivered','cancelled','returned')
+                        AND detail_fetched_at < ?
+                        AND (? IS NULL OR purchased_at IS NULL OR purchased_at >= ?)))
              ORDER BY purchased_at DESC
              LIMIT ?`,
           )
-          .all(staleBefore, limit) as { order_id: string }[]
+          .all(staleBefore, settledBefore ?? null, settledBefore ?? null, limit) as {
+          order_id: string;
+        }[]
       ).map((row) => row.order_id);
     },
 
-    pendingDetailCount(staleBefore: string): number {
+    pendingDetailCount(staleBefore: string, settledBefore?: string): number {
       const row = db
         .query(
           `SELECT COUNT(*) AS n FROM orders
            WHERE detail_error IS NULL
              AND (detail_fetched_at IS NULL
-                  OR (status NOT IN ('delivered','cancelled','returned') AND detail_fetched_at < ?))`,
+                  OR (status NOT IN ('delivered','cancelled','returned')
+                      AND detail_fetched_at < ?
+                      AND (? IS NULL OR purchased_at IS NULL OR purchased_at >= ?)))`,
         )
-        .get(staleBefore) as { n: number };
+        .get(staleBefore, settledBefore ?? null, settledBefore ?? null) as { n: number };
       return row.n;
     },
 

@@ -56,6 +56,9 @@ export function printTable<T>(rows: T[], columns: Array<[string, (row: T) => str
 export const brl = (money: { amount: number; currency: string } | null | undefined): string =>
   money ? `${money.currency} ${money.amount.toFixed(2)}` : "-";
 
+/** Enough chunks for a full history; a runaway loop is capped, not endless. */
+const MAX_SYNC_CHUNKS = 60;
+
 type InvokeOptions = { json: boolean; format?: (result: unknown) => string };
 
 async function withContext<T>(fn: (ctx: Ctx) => Promise<T> | T): Promise<T> {
@@ -129,6 +132,49 @@ export async function runCli(argv: string[], version: string): Promise<void> {
         { json: Boolean(options.json) },
       ),
     );
+
+  command("sync")
+    .description("Atualiza o cache local com os pedidos da Amazon (em blocos)")
+    .option("--full", "varre todos os anos")
+    .option("--reparse", "reprocessa o que já está em cache, sem rede")
+    .option("--year <filter>", "sincroniza só este período, ex.: year-2024")
+    .option("--max-requests <n>", "páginas por bloco", Number)
+    .option("--no-details", "não busca a página de detalhe de cada pedido")
+    .action(async (options) => {
+      const args = {
+        mode: options.reparse ? "reparse" : options.full ? "full" : undefined,
+        year: options.year,
+        max_requests: options.maxRequests,
+        with_details: options.details,
+      };
+      try {
+        await withContext(async (ctx) => {
+          const tool = resolveTool(ctx.config.readOnly, "sync");
+          const totals: Record<string, number> = {};
+          let last: Record<string, unknown> = {};
+          // Chunks exist so one tool call never outlives a client timeout; the
+          // CLI just keeps asking until the sync says it is done.
+          for (let chunk = 1; chunk <= MAX_SYNC_CHUNKS; chunk += 1) {
+            const result = (await runTool(tool, compactObject(args), ctx)) as Record<string, unknown>;
+            last = result;
+            for (const [key, value] of Object.entries(result)) {
+              if (typeof value === "number") totals[key] = (totals[key] ?? 0) + value;
+            }
+            // Progress goes to stderr so stdout stays a single parseable result.
+            console.error(
+              `bloco ${chunk}: ${result.requestsUsed} req, ${result.ordersNew} novos, ` +
+                `${result.detailsFetched} detalhes, faltam ${result.pendingDetails}`,
+            );
+            if (result.done === true) break;
+          }
+          const summary = { ...last, ...totals, done: last.done === true };
+          await write(options.json ? JSON.stringify(summary, null, 2) : formatHuman(summary));
+        });
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        process.exitCode = 1;
+      }
+    });
 
   command("raw <path>")
     .description("Abre uma página de pedidos e devolve o HTML já descriptografado")

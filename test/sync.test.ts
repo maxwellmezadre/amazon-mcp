@@ -187,3 +187,48 @@ describe("reparse", () => {
     expect(fresh.cache().toReparse(PARSER_VERSION)).toHaveLength(0);
   });
 });
+
+describe("settled orders", () => {
+  test("an old order with no status text is not re-fetched forever", async () => {
+    const db = memoryDb();
+    const ctx = context(fakeLoader().loader, db);
+    await runSyncChunk(ctx, { mode: "full", maxRequests: 100 });
+
+    // Amazon strips the status from old orders, so they parse as "unknown".
+    expect(ctx.cache().getOrder(ctx.cache().listOrders({})[0]?.order_id as string)?.status).toBe(
+      "unknown",
+    );
+    // Make every detail stale: a naive TTL rule would queue them all again.
+    db.query("UPDATE orders SET detail_fetched_at = '2000-01-01T00:00:00Z'").run();
+
+    const { loader, calls } = fakeLoader();
+    const next = context(loader, db);
+    const report = await runSyncChunk(next, { maxRequests: 100 });
+    expect(report.detailsFetched).toBe(0);
+    expect(calls.filter((url) => url.includes("print.html"))).toHaveLength(0);
+  });
+
+  test("a recent order with an unknown status is still refreshed", () => {
+    const db = memoryDb();
+    const ctx = context(fakeLoader().loader, db);
+    const cache = ctx.cache();
+    cache.upsertSummary({
+      orderId: "702-9999999-9999999",
+      type: "physical",
+      purchasedAt: "2026-09-01",
+      purchasedAtText: null,
+      totalCents: 1000,
+      recipientName: null,
+      shipmentStatusText: null,
+      status: "unknown",
+      items: [],
+    });
+    db.query("UPDATE orders SET detail_fetched_at = '2000-01-01T00:00:00Z'").run();
+    const settled = new Date(Date.parse("2026-09-07T12:00:00Z") - 90 * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    expect(cache.pendingDetail("2026-09-07T00:00:00Z", 10, settled)).toContain(
+      "702-9999999-9999999",
+    );
+  });
+});

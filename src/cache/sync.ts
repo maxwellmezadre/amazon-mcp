@@ -27,6 +27,13 @@ export const META_FILTERS = "sync.filters";
 /** A live order may still change; a delivered one cannot. */
 export const DETAIL_TTL_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Past this age an order is treated as settled even when its status is unknown.
+ * Amazon removes the status text from old orders, so they never parse as
+ * "delivered" and would otherwise be re-fetched forever.
+ */
+export const SETTLED_AFTER_MS = 90 * 24 * 60 * 60 * 1000;
+
 export type SyncMode = "incremental" | "full" | "reparse";
 
 export type SyncOptions = {
@@ -169,8 +176,9 @@ export async function runSyncChunk(ctx: Ctx, options: SyncOptions = {}): Promise
   // Phase B — the detail pages, which is where the prices and payment live.
   if (withDetails && listDone) {
     const staleBefore = new Date(ctx.now() - DETAIL_TTL_MS).toISOString();
+    const settledBefore = new Date(ctx.now() - SETTLED_AFTER_MS).toISOString().slice(0, 10);
     while (report.requestsUsed < budget) {
-      const [orderId] = cache.pendingDetail(staleBefore, 1);
+      const [orderId] = cache.pendingDetail(staleBefore, 1, settledBefore);
       if (!orderId) break;
       report.requestsUsed += 1;
       try {
@@ -188,10 +196,11 @@ export async function runSyncChunk(ctx: Ctx, options: SyncOptions = {}): Promise
         throw error;
       }
     }
-    report.pendingDetails = cache.pendingDetailCount(staleBefore);
+    report.pendingDetails = cache.pendingDetailCount(staleBefore, settledBefore);
   } else if (withDetails) {
     report.pendingDetails = cache.pendingDetailCount(
       new Date(ctx.now() - DETAIL_TTL_MS).toISOString(),
+      new Date(ctx.now() - SETTLED_AFTER_MS).toISOString().slice(0, 10),
     );
   }
 
