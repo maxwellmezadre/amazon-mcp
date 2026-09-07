@@ -113,6 +113,23 @@ export async function runCli(argv: string[], version: string): Promise<void> {
       invoke("auth_status", { verify: options.verify }, { json: Boolean(options.json) }),
     );
 
+  command("login")
+    .description("Abre o navegador para você entrar na Amazon e salva a sessão")
+    .option("--from-browser <browser>", "importa a sessão de arc|chrome|chromium|brave|edge (macOS)")
+    .option("--timeout <seconds>", "tempo para concluir o login", Number)
+    .option("--fresh", "apaga o perfil de automação antes (dispositivo novo)")
+    .action((options) =>
+      invoke(
+        "login",
+        {
+          from_browser: options.fromBrowser,
+          timeout_seconds: options.timeout,
+          fresh: options.fresh,
+        },
+        { json: Boolean(options.json) },
+      ),
+    );
+
   command("raw <path>")
     .description("Abre uma página de pedidos e devolve o HTML já descriptografado")
     .option("--ready <selector>", "seletor CSS que prova que a página terminou de carregar")
