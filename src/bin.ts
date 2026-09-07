@@ -9,13 +9,14 @@ import pkg from "../package.json" with { type: "json" };
 // to the CLI.
 const arg = process.argv[2];
 
-if (arg === "--version" || arg === "-V") {
-  // Scaffold shortcut: the CLI does not exist yet.
-  console.log(pkg.version);
-} else if (arg === "mcp") {
-  console.error("amazon-mcp: servidor MCP ainda não implementado (step 006).");
-  process.exitCode = 1;
+if (arg === "mcp") {
+  const [{ loadConfig }, { createContext }, { startMcpServer }] = await Promise.all([
+    import("./config.js"),
+    import("./context.js"),
+    import("./mcp/server.js"),
+  ]);
+  await startMcpServer(createContext(loadConfig()), pkg.version);
 } else {
-  console.error("amazon: CLI ainda não implementado (step 006).");
-  process.exitCode = 1;
+  const { runCli } = await import("./cli/index.js");
+  await runCli(process.argv, pkg.version);
 }
