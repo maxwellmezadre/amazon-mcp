@@ -1,8 +1,11 @@
+import type { Database } from "bun:sqlite";
 import { type BrowserClient, type CooldownStore, createBrowserClient } from "./browser/client.js";
 import { launchWithPlaywright } from "./browser/launch.js";
 import { type PageLoader, createPageLoader } from "./browser/transport.js";
 import type { LaunchBrowser } from "./browser/types.js";
 import { type Config, loadConfig } from "./config.js";
+import { type CacheRepo, createCacheRepo } from "./cache/repo.js";
+import { openCache } from "./cache/db.js";
 import { type Logger, createLogger } from "./core/logger.js";
 import { type SessionStore, createSessionStore } from "./session/store.js";
 
@@ -20,6 +23,8 @@ export type ContextDeps = {
   log?: Logger;
   loader?: PageLoader;
   cooldown?: CooldownStore;
+  /** `:memory:` database in tests. */
+  db?: Database;
 };
 
 export type Ctx = {
@@ -29,6 +34,8 @@ export type Ctx = {
   session: SessionStore;
   /** Page loads, paced and guarded. Starts a browser on first use. */
   amazon: BrowserClient;
+  /** Memoised: the SQLite file is only opened (and migrated) on first use. */
+  cache: () => CacheRepo;
   /** Releases the browser (and later the database). Safe to call more than once. */
   dispose: () => Promise<void>;
 };
@@ -56,6 +63,28 @@ export function createContext(config: Config, deps: ContextDeps = {}): Ctx {
       now,
     });
 
+  // Opened lazily: `auth_status` and `login` must not create a cache file.
+  let db: Database | null = null;
+  let repo: CacheRepo | null = null;
+  const cache = (): CacheRepo => {
+    if (!repo) {
+      db = deps.db ?? openCache(config.dbPath);
+      repo = createCacheRepo(db, now);
+    }
+    return repo;
+  };
+
+  // The anti-bot cooldown lives in the cache's `meta` table so it survives the
+  // process: a retrying agent, or a brand-new run, cannot shorten it.
+  const cooldown: CooldownStore = deps.cooldown ?? {
+    get: () => {
+      const raw = cache().getMeta(COOLDOWN_META);
+      const until = raw === undefined ? Number.NaN : Number(raw);
+      return Number.isFinite(until) ? until : null;
+    },
+    set: (until: number) => cache().setMeta(COOLDOWN_META, String(until)),
+  };
+
   const amazon = createBrowserClient(
     {
       loader,
@@ -63,7 +92,7 @@ export function createContext(config: Config, deps: ContextDeps = {}): Ctx {
       minIntervalMs: config.minIntervalMs,
       jitterMs: config.jitterMs,
       log,
-      ...(deps.cooldown ? { cooldown: deps.cooldown } : {}),
+      cooldown,
     },
     {
       ...(deps.sleep ? { sleep: deps.sleep } : {}),
@@ -78,10 +107,18 @@ export function createContext(config: Config, deps: ContextDeps = {}): Ctx {
     now,
     session,
     amazon,
+    cache,
     dispose: async () => {
       await amazon.close();
+      // Only close what this context opened.
+      if (deps.db === undefined) db?.close();
+      db = null;
+      repo = null;
     },
   };
 }
+
+/** Meta key of the persisted anti-bot cooldown (unix ms). */
+export const COOLDOWN_META = "antibot.cooldown_until";
 
 export const contextFromEnv = (): Ctx => createContext(loadConfig());
