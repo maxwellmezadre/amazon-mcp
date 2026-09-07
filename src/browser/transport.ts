@@ -42,6 +42,10 @@ export type LoadOptions = {
 
 export type PageLoader = {
   load(url: string, opts: LoadOptions): Promise<PageResult>;
+  /** Renders a page to PDF; used for orders whose seller issued no NF-e. */
+  pdf(url: string, opts: LoadOptions): Promise<Uint8Array>;
+  /** Fetches a file through the browser session (signed invoice URLs). */
+  download(url: string): Promise<Uint8Array>;
   /** True once a browser is up; `doctor` and `auth_status` report it without launching one. */
   running(): boolean;
   close(): Promise<void>;
@@ -212,24 +216,49 @@ export function createPageLoader(opts: PageLoaderOptions): PageLoader {
     throw new ParseError(`A página ${url} carregou mas não trouxe "${selector}".`);
   }
 
+  async function open(url: string, options: LoadOptions): Promise<PageLike> {
+    const current = await ensurePage();
+    try {
+      await current.goto(url, { waitUntil: "domcontentloaded", timeout: config.pageTimeoutMs });
+    } catch (error) {
+      throw new HttpError(0, `Falha ao abrir ${url}: ${(error as Error).message}`);
+    }
+    classifyLanding(current.url());
+    // Never wait for networkidle: Amazon's telemetry beacons keep firing and
+    // it may never settle. Wait for the decrypted content instead.
+    await waitForDecryption(current, url, options.readySelector, options.readyExpression);
+    return current;
+  }
+
   return {
     running: () => context !== null,
     close,
 
-    async load(url, options) {
-      const current = await ensurePage();
-      try {
-        await current.goto(url, {
-          waitUntil: "domcontentloaded",
-          timeout: config.pageTimeoutMs,
-        });
-      } catch (error) {
-        throw new HttpError(0, `Falha ao abrir ${url}: ${(error as Error).message}`);
+    async pdf(url, options) {
+      const current = await open(url, options);
+      if (!current.pdf) {
+        throw new HttpError(0, "O navegador não suporta impressão em PDF (precisa ser headless).");
       }
-      classifyLanding(current.url());
-      // Never wait for networkidle: Amazon's telemetry beacons keep firing and
-      // it may never settle. Wait for the decrypted content instead.
-      await waitForDecryption(current, url, options.readySelector, options.readyExpression);
+      const bytes = await current.pdf({ format: "A4", printBackground: true });
+      await persistCookies();
+      touch();
+      return bytes;
+    },
+
+    async download(url) {
+      await ensurePage();
+      const api = context?.request;
+      if (!api) throw new HttpError(0, "O navegador não expõe download de arquivos.");
+      const response = await api.get(url);
+      if (!response.ok()) {
+        throw new HttpError(response.status(), `Download falhou (HTTP ${response.status()}).`);
+      }
+      touch();
+      return response.body();
+    },
+
+    async load(url, options) {
+      const current = await open(url, options);
       const result = (await current.evaluate(extractScript)) as PageResult;
       await persistCookies();
       touch();

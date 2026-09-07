@@ -176,6 +176,65 @@ export async function runCli(argv: string[], version: string): Promise<void> {
       }
     });
 
+  command("doctor")
+    .description("Diagnóstico camada a camada; diz qual parte quebrou")
+    .option("--shallow", "não carrega páginas da Amazon")
+    .action((o) => invoke("doctor", { deep: o.shallow ? false : undefined }, { json: Boolean(o.json) }));
+
+  command("orders")
+    .description("Lista os pedidos do cache")
+    .option("--from <date>", "data inicial YYYY-MM-DD")
+    .option("--to <date>", "data final YYYY-MM-DD")
+    .option("--type <type>", "physical|digital")
+    .option("--seller <name>", "filtra por vendedor")
+    .option("--limit <n>", "máximo de pedidos", Number)
+    .action((o) =>
+      invoke("list_orders", { from: o.from, to: o.to, type: o.type, seller: o.seller, limit: o.limit },
+        { json: Boolean(o.json) }));
+
+  command("order <orderId>")
+    .description("Detalhe completo de um pedido")
+    .option("--refresh", "busca a página de novo")
+    .action((id, o) => invoke("get_order", { order_id: id, refresh: o.refresh }, { json: Boolean(o.json) }));
+
+  command("search <query>")
+    .description("Busca no que já foi comprado")
+    .option("--limit <n>", "máximo de itens", Number)
+    .action((q, o) => invoke("search_products", { query: q, limit: o.limit }, { json: Boolean(o.json) }));
+
+  command("spending")
+    .description("Quanto foi gasto, agrupado")
+    .option("--by <group>", "month|year|seller|payment_method|type|breakdown", "month")
+    .option("--from <date>", "data inicial")
+    .option("--to <date>", "data final")
+    .action((o) => invoke("spending_summary", { group_by: o.by, from: o.from, to: o.to }, { json: Boolean(o.json) }));
+
+  command("installments")
+    .description("Cronograma projetado das parcelas")
+    .option("--from <date>", "início")
+    .option("--months <n>", "meses à frente", Number)
+    .action((o) => invoke("installments_schedule", { from: o.from, months: o.months }, { json: Boolean(o.json) }));
+
+  command("invoice <orderId>")
+    .description("Links de nota fiscal de um pedido")
+    .action((id, o) => invoke("get_invoice", { order_id: id }, { json: Boolean(o.json) }));
+
+  command("download-invoice <orderId>")
+    .description("Salva a nota fiscal em AMAZON_EXPORT_DIR")
+    .option("--kind <kind>", "nfe|summary", "nfe")
+    .option("--filename <name>", "nome do arquivo")
+    .action((id, o) =>
+      invoke("download_invoice", { order_id: id, kind: o.kind, filename: o.filename }, { json: Boolean(o.json) }));
+
+  command("export")
+    .description("Exporta pedidos ou itens para JSON/CSV")
+    .option("--format <format>", "json|csv", "csv")
+    .option("--scope <scope>", "orders|items", "orders")
+    .option("--from <date>", "data inicial")
+    .option("--to <date>", "data final")
+    .action((o) =>
+      invoke("export", { format: o.format, scope: o.scope, from: o.from, to: o.to }, { json: Boolean(o.json) }));
+
   command("raw <path>")
     .description("Abre uma página de pedidos e devolve o HTML já descriptografado")
     .option("--ready <selector>", "seletor CSS que prova que a página terminou de carregar")

@@ -37,6 +37,10 @@ export type ClientState = {
 export type BrowserClient = {
   /** Loads one page through the queue. Relative paths resolve against the base url. */
   page(path: string, opts: LoadOptions): Promise<PageResult>;
+  /** Renders a page to PDF, through the same queue and breaker. */
+  pdf(path: string, opts?: LoadOptions): Promise<Uint8Array>;
+  /** Downloads a file with the session's cookies, through the same queue. */
+  download(url: string): Promise<Uint8Array>;
   /** Runs `fn` in the queue, so callers that need the browser directly still respect pacing. */
   serial<T>(fn: () => Promise<T>): Promise<T>;
   state(): ClientState;
@@ -152,6 +156,18 @@ export function createBrowserClient(opts: ClientOptions, deps: ClientDeps = {}):
       serial(async () => {
         assertUsable();
         return load(path, options);
+      }),
+    pdf: (path, options) =>
+      serial(async () => {
+        assertUsable();
+        await gap();
+        return loader.pdf(new URL(path, opts.baseUrl).toString(), options ?? { readySelector: "body" });
+      }),
+    download: (url) =>
+      serial(async () => {
+        assertUsable();
+        await gap();
+        return loader.download(url);
       }),
     state: () => ({
       tripped,

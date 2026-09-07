@@ -1,9 +1,12 @@
 import type { Config } from "../config.js";
 import { authStatus } from "./auth.js";
+import { doctor } from "./doctor.js";
 import type { ToolDef } from "./define.js";
 import { login } from "./login.js";
 import { getOrder, listOrders, searchProducts } from "./orders.js";
 import { installmentsSchedule, spendingSummary } from "./analytics.js";
+import { downloadInvoice, getInvoice } from "./invoices.js";
+import { exportData } from "./export.js";
 import { sync } from "./sync.js";
 import { rawGet } from "./raw.js";
 
@@ -14,6 +17,7 @@ export const allTools: ToolDef[] = [
   // Session and diagnostics
   authStatus,
   login,
+  doctor,
   // Cache
   sync,
   // Orders
@@ -23,6 +27,11 @@ export const allTools: ToolDef[] = [
   // Analytics
   spendingSummary,
   installmentsSchedule,
+  // Invoices
+  getInvoice,
+  downloadInvoice,
+  // Files
+  exportData,
   // Escape hatch
   rawGet,
 ];

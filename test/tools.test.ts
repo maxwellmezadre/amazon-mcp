@@ -18,6 +18,8 @@ let ctx: Ctx;
 const loader: PageLoader = {
   running: () => true,
   close: async () => undefined,
+  pdf: async () => new Uint8Array(Buffer.from("%PDF-1.4 fake")),
+  download: async () => new Uint8Array(Buffer.from("%PDF-1.4 fake")),
   load: async (url) => {
     const html = /year-2026/.test(url)
       ? fixture("orders-with-two.html")
@@ -162,5 +164,51 @@ describe("search_products", () => {
 
   test("punctuation from the user cannot break the query", async () => {
     await expect(call("search_products", { query: 'hamot" OR 1=1' })).resolves.toBeDefined();
+  });
+});
+
+describe("file-writing tools", () => {
+  test("a filename with a path separator or a leading dot is refused", async () => {
+    for (const filename of ["../escape.pdf", "sub/dir.pdf", ".hidden", "a\\b.pdf"]) {
+      await expect(
+        call("download_invoice", { order_id: "702-8702328-5013112", filename }),
+      ).rejects.toThrow(/inválido/);
+    }
+  });
+
+  test("csv quotes the values that need it", async () => {
+    const { toCsv } = await import("../src/tools/export.js");
+    const csv = toCsv([{ a: "x,y", b: 'he said "hi"', c: null, d: 1 }]);
+    expect(csv.split("\n")[1]).toBe('"x,y","he said ""hi""",,1');
+    expect(toCsv([])).toBe("");
+  });
+
+  test("export writes inside the export dir and reports the row count", async () => {
+    const result = await call("export", { format: "json", scope: "items" });
+    expect(result.rows).toBe(5);
+    expect(result.path as string).toStartWith(ctx.config.exportDir);
+  });
+});
+
+describe("doctor", () => {
+  test("reports every layer, and never omits a check it could not run", async () => {
+    const result = await call("doctor", { deep: false });
+    const checks = result.checks as Array<{ name: string; ok: boolean; detail: string }>;
+    const names = checks.map((check) => check.name);
+    for (const expected of [
+      "config",
+      "session",
+      "browser",
+      "orders_page",
+      "order_id_sanity",
+      "detail_page",
+      "money_identity",
+      "cache",
+    ]) {
+      expect(names).toContain(expected);
+    }
+    // A skipped check says so rather than quietly disappearing.
+    expect(checks.find((check) => check.name === "orders_page")?.detail).toContain("pulado");
+    expect(checks.find((check) => check.name === "cache")?.ok).toBe(true);
   });
 });

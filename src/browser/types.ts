@@ -20,7 +20,7 @@ export type PageLike = {
    */
   evaluate(script: string): Promise<unknown>;
   /** Chromium headless only; used to save an order summary as PDF. */
-  pdf?(opts: { path: string; format?: string; printBackground?: boolean }): Promise<unknown>;
+  pdf?(opts: { format?: string; printBackground?: boolean }): Promise<Uint8Array>;
 };
 
 export type BrowserContextLike = {
@@ -29,6 +29,11 @@ export type BrowserContextLike = {
   addCookies(cookies: Cookie[]): Promise<void>;
   /** Resource blocking: images, fonts and media are aborted; scripts never are. */
   route?(pattern: string, handler: (route: RouteLike) => unknown): Promise<void>;
+  /**
+   * Shares the context's cookies, which is what lets a signed invoice URL be
+   * fetched as the logged-in user without rebuilding a Cookie header by hand.
+   */
+  request?: { get(url: string): Promise<{ ok(): boolean; status(): number; body(): Promise<Uint8Array> }> };
   close(): Promise<void>;
 };
 

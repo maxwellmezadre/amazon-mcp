@@ -40,6 +40,8 @@ function fakeLoader(overrides: Array<[RegExp, string | Error]> = []) {
   const loader: PageLoader = {
     running: () => true,
     close: async () => undefined,
+    pdf: async () => new Uint8Array(Buffer.from("%PDF-1.4 fake")),
+    download: async () => new Uint8Array(Buffer.from("%PDF-1.4 fake")),
     load: async (url) => {
       calls.push(url);
       for (const [pattern, answer] of routes) {
