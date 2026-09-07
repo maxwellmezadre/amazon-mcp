@@ -1,6 +1,6 @@
 {
   "name": "@maxwellmezadre/amazon-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI + servidor MCP para o histórico de compras da Amazon.com.br (pedidos, produtos, preços, parcelamento e notas fiscais) sobre um núcleo compartilhado",
   "type": "module",
   "license": "MIT",

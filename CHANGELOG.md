@@ -5,6 +5,8 @@ Segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-07
+
 ### Added
 
 - `docs/INTERNAL-API.md`: a superfície interna da Amazon (páginas, autenticação
@@ -81,5 +83,6 @@ documentação de engenharia reversa inicial supunha:
   aparecem como "entregue".
 - Preços vêm com espaço não separável, e o CEP vem sem hífen.
 
-[Unreleased]: https://github.com/maxwellmezadre/amazon-mcp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/maxwellmezadre/amazon-mcp/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/maxwellmezadre/amazon-mcp/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/maxwellmezadre/amazon-mcp/releases/tag/v0.1.0
