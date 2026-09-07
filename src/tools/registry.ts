@@ -2,6 +2,7 @@ import type { Config } from "../config.js";
 import { authStatus } from "./auth.js";
 import type { ToolDef } from "./define.js";
 import { login } from "./login.js";
+import { sync } from "./sync.js";
 import { rawGet } from "./raw.js";
 
 // The single list of tools, shared by the MCP server and the CLI so the two
@@ -11,6 +12,8 @@ export const allTools: ToolDef[] = [
   // Session and diagnostics
   authStatus,
   login,
+  // Cache
+  sync,
   // Escape hatch
   rawGet,
 ];
