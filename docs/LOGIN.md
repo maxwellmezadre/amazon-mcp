@@ -29,7 +29,7 @@ novo. `--timeout <s>` muda os 5 minutos de espera.
 
 ## Importando de um navegador já logado (macOS)
 
-Se você já está logado no Arc, Chrome, Brave, Edge ou Chromium:
+Se você já está logado no Dia, Arc, Chrome, Brave, Edge ou Chromium:
 
 ```sh
 amazon login --from-browser arc
