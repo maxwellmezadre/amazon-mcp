@@ -118,7 +118,7 @@ export async function runCli(argv: string[], version: string): Promise<void> {
 
   command("login")
     .description("Abre o navegador para você entrar na Amazon e salva a sessão")
-    .option("--from-browser <browser>", "importa a sessão de arc|chrome|chromium|brave|edge (macOS)")
+    .option("--from-browser <browser>", "importa a sessão de dia|arc|chrome|chromium|brave|edge (macOS)")
     .option("--timeout <seconds>", "tempo para concluir o login", Number)
     .option("--fresh", "apaga o perfil de automação antes (dispositivo novo)")
     .action((options) =>

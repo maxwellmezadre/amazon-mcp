@@ -15,7 +15,7 @@ hora da chamada com uma mensagem que diz o que fazer, não no boot.
 | `AMAZON_READ_ONLY` | `0` | `1` não registra `login`, `sync`, `download_invoice` e `export` |
 | `AMAZON_COMPACT` | `0` | `1` faz as tools devolverem só o essencial por padrão |
 | `AMAZON_BROWSER_CHANNEL` | `chrome` | `chrome`, `chromium` ou `msedge` |
-| `AMAZON_IMPORT_BROWSER` | unset | `arc`, `chrome`, `chromium`, `brave` ou `edge`: `login` importa a sessão deste navegador (macOS) |
+| `AMAZON_IMPORT_BROWSER` | unset | `dia`, `arc`, `chrome`, `chromium`, `brave` ou `edge`: `login` importa a sessão deste navegador (macOS) |
 | `AMAZON_HEADLESS` | `1` | `0` abre a janela do navegador nas leituras (depuração, bloqueio) |
 | `AMAZON_MIN_INTERVAL_MS` | `2000` | Intervalo mínimo entre páginas |
 | `AMAZON_JITTER_MS` | `2000` | Variação aleatória somada ao intervalo |

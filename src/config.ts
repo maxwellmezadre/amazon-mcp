@@ -12,7 +12,7 @@ export const BROWSER_CHANNELS = ["chrome", "chromium", "msedge"] as const;
 export type BrowserChannel = (typeof BROWSER_CHANNELS)[number];
 
 /** Chromium-based browsers whose cookie store can be imported (macOS). */
-export const IMPORT_BROWSERS = ["arc", "chrome", "chromium", "brave", "edge"] as const;
+export const IMPORT_BROWSERS = ["dia", "arc", "chrome", "chromium", "brave", "edge"] as const;
 export type ImportBrowser = (typeof IMPORT_BROWSERS)[number];
 
 export const DEFAULT_BASE_URL = "https://www.amazon.com.br";
@@ -41,6 +41,7 @@ export const ConfigSchema = Type.Object({
   /** When set, `login` imports the session from this browser instead of opening a window. */
   importBrowser: Type.Optional(
     Type.Union([
+      Type.Literal("dia"),
       Type.Literal("arc"),
       Type.Literal("chrome"),
       Type.Literal("chromium"),

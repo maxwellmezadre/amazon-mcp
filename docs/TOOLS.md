@@ -38,7 +38,7 @@ Escreve em disco ou no cache: sim.
 
 | Parâmetro | Tipo | Obrigatório | Descrição |
 | --- | --- | --- | --- |
-| `from_browser` | `arc` \| `chrome` \| `chromium` \| `brave` \| `edge` | não | Importa a sessão deste navegador (macOS, via Keychain) em vez de abrir uma janela |
+| `from_browser` | `dia` \| `arc` \| `chrome` \| `chromium` \| `brave` \| `edge` | não | Importa a sessão deste navegador (macOS, via Keychain) em vez de abrir uma janela |
 | `timeout_seconds` | integer (≥ 60, ≤ 900) | não | Tempo para concluir o login na janela (default 300) |
 | `fresh` | boolean | não | Apaga o perfil de automação antes, para a Amazon ver um dispositivo novo (use se houver bloqueio) |
 

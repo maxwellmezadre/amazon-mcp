@@ -144,7 +144,7 @@ Todas opcionais. A tabela completa está em
 | `AMAZON_READ_ONLY` | `0` | Não registra as tools que escrevem em disco |
 | `AMAZON_HEADLESS` | `1` | `0` mostra a janela do Chrome nas leituras |
 | `AMAZON_BROWSER_CHANNEL` | `chrome` | `chrome`, `chromium` ou `msedge` |
-| `AMAZON_IMPORT_BROWSER` | unset | `arc`, `chrome`, `chromium`, `brave` ou `edge` |
+| `AMAZON_IMPORT_BROWSER` | unset | `dia`, `arc`, `chrome`, `chromium`, `brave` ou `edge` |
 | `AMAZON_MIN_INTERVAL_MS` | `2000` | Intervalo mínimo entre páginas |
 | `AMAZON_JITTER_MS` | `2000` | Variação aleatória somada ao intervalo |
 
